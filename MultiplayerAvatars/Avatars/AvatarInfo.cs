@@ -83,7 +83,7 @@ namespace MultiplayerAvatars.Avatars
                 yield break;
             }
 
-            Plugin.Log.Debug("Received response from ModelSaber...");
+            Plugin.Log?.Debug("Received response from ModelSaber...");
             string docPath = "";
             string customAvatarPath = "";
 

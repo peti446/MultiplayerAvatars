@@ -1,5 +1,5 @@
 # MultiplayerAvatars ![Steam/PC-Only](https://goobi.moe/badges/api/v2/text?text=Steam/PC-Only&widthPadding=-80) [![Build](https://github.com/Goobwabber/MultiplayerAvatars/workflows/Build/badge.svg?event=push)](https://github.com/Goobwabber/MultiplayerAvatars/actions?query=workflow%3ABuild)
-A Beat Saber mod that adds [CustomAvatars](https://github.com/nicoco007/BeatSaberCustomAvatars) support to the [MultiplayerExtensions](https://github.com/Goobwabber/MultiplayerExtensions) mod. **This is a work in progress which has bugs.**
+A Beat Saber mod that adds [CustomAvatars](https://github.com/nicoco007/BeatSaberCustomAvatars) support to the [MultiplayerCore](https://github.com/Goobwabber/MultiplayerCore) mod (Requieres custom server like [BeatTogether](https://github.com/BeatTogether/BeatTogether)). **This is a work in progress which has bugs.**
 
 ## Features
 * Sends avatar data to other players who have the mod.
@@ -16,10 +16,10 @@ MultiplayerAvatars has not been released yet, but you can grab the latest build 
 3. **Optional**: Edit `Beat Saber IPA.json` (in your `UserData` folder) and change `Debug` -> `ShowCallSource` to `true`. This will enable BSIPA to get file and line numbers from the `PDB` file where errors occur, which is very useful when reading the log files. This may have a *slight* impact on performance.
 
 ## Requirements
-Mods without a link can be downloaded from [BeatMods](https://beatmods.com/#/mods) or using Mod Assistant. **Do NOT use any of the DLLs in the `Refs` folder, they have been stripped of code and will not work.**
-* [CustomAvatar](https://github.com/nicoco007/BeatSaberCustomAvatars) 5.1.2+
-* [MultiplayerExtensions](https://github.com/Zingabopp/MultiplayerExtensions) 0.4.7+
-* SiraUtil 2.5.2+
+Mods without a link can be downloaded from [BeatMods](https://beatmods.com/#/mods) or using Mod Assistant.
+* [CustomAvatar](https://github.com/nicoco007/BeatSaberCustomAvatars) 5.2.11+
+* [MultiplayerCore](https://github.com/Goobwabber/MultiplayerCore) 1.0.0+
+* SiraUtil 3.0.6+
 
 ## Contributing
 Anyone can feel free to contribute bug fixes or enhancements to MultiplayerAvatars. GitHub Actions for Pull Requests made from GitHub accounts that don't have direct access to the repository will fail. This is normal because the Action requires a `Secret` to download dependencies.
@@ -31,9 +31,6 @@ Visual Studio 2019 with the [BeatSaberModdingTools](https://github.com/Zingabopp
    * This assumes you have already set the directory for your Beat Saber game folder in `Extensions` -> `Beat Saber Modding Tools` -> `Settings...`
    * If you do not have the BeatSaberModdingTools extension, you will need to manually create a `MultiplayerAvatars.csproj.user` file to set the location of your game install. An example is showing below.
 4. The project should now build. 
-
-Troubleshooting: 
-	-If you have any issues with Nuget('' is not a valid version) or VS asks you to 'upgrade' the csproj, you're likely missing some neccessary VS2019 features.
 
 **Example csproj.user File:**
 ```xml

@@ -47,8 +47,9 @@ namespace MultiplayerAvatars.Avatars
         }
 
         public bool allowMaintainPelvisPosition => true;
-
+#pragma warning disable CS0067
         public event Action? inputChanged;
+#pragma warning restore CS0067
 
         public bool TryGetFingerCurl(DeviceUse use, out FingerCurl curl)
         {

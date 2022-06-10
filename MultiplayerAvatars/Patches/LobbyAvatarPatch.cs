@@ -2,9 +2,9 @@
 using MultiplayerAvatars.Avatars;
 using System;
 
-namespace MultiplayerAvatars.HarmonyPatches
+namespace MultiplayerAvatars.Patches
 {
-    [HarmonyPatch(typeof(MultiplayerLobbyInstaller), "InstallBindings", MethodType.Normal)]
+    [HarmonyPatch(typeof(MultiplayerLobbyInstaller), nameof(MultiplayerLobbyInstaller.InstallBindings), MethodType.Normal)]
     internal class LobbyAvatarPatch
     {
         internal static void Prefix(ref MultiplayerLobbyAvatarController ____multiplayerLobbyAvatarControllerPrefab)
@@ -18,7 +18,7 @@ namespace MultiplayerAvatars.HarmonyPatches
             }
             catch (Exception ex)
             {
-                Plugin.Log.Error(ex);
+                Plugin.Log?.Error(ex);
                 throw;
             }
         }

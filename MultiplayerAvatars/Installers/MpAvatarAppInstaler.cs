@@ -1,10 +1,11 @@
 ﻿using MultiplayerAvatars.Avatars;
 using MultiplayerAvatars.Providers;
+using SiraUtil.Zenject;
 using Zenject;
 
 namespace MultiplayerAvatars.Installers
 {
-    class AvatarInstaller : Installer
+    class MpAvatarAppInstaler : Installer
     {
         public override void InstallBindings()
         {

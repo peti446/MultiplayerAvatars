@@ -15,17 +15,21 @@ namespace MultiplayerAvatars.Providers
 {
     public class ModelSaber : IAvatarProvider<AvatarPrefab>, IInitializable
     {
+#pragma warning disable CS0649
         [Inject]
         private AvatarLoader? _avatarLoader;
+#pragma warning restore CS0649
 
+#pragma warning disable CS0067
         public event EventHandler<AvatarDownloadedEventArgs>? avatarDownloaded;
+#pragma warning restore CS0067
         public event EventHandler? hashesCalculated;
         public Type AvatarType => typeof(AvatarPrefab);
         public bool isCalculatingHashes { get; protected set; }
         public int cachedAvatarsCount => cachedAvatars.Count;
         public string AvatarDirectory => PlayerAvatarManager.kCustomAvatarsPath;
 
-        private Dictionary<string, AvatarPrefab> cachedAvatars = new Dictionary<string, AvatarPrefab>();
+        private readonly Dictionary<string, AvatarPrefab> cachedAvatars = new Dictionary<string, AvatarPrefab>();
 
         public bool CacheAvatar(string avatarPath)
         {
@@ -59,13 +63,18 @@ namespace MultiplayerAvatars.Providers
             AvatarInfo? avatarInfo = null;
             try
             {
-                Uri uri = new Uri($"https://modelsaber.com/api/v1/avatar/get.php?filter=hash:{hash}");
+                Uri uri = new Uri($"https://modelsaber.com/api/v2/get.php?type=avatar&filter=hash:{hash}");
                 var response = await Plugin.HttpClient.GetAsync(uri, cancellationToken);
                 if (response.IsSuccessStatusCode)
                 {
                     Plugin.Log.Debug("Received response from ModelSaber...");
                     string content = await response.Content.ReadAsStringAsync();
-                    avatarInfo = JsonConvert.DeserializeObject<Dictionary<string, AvatarInfo>>(content).First().Value;
+                    Dictionary<string, AvatarInfo> avatars = JsonConvert.DeserializeObject<Dictionary<string, AvatarInfo>>(content);
+                    if (!avatars.Any())
+                    {
+                        return null;
+                    }
+                    avatarInfo = avatars.First().Value;
                 }
                 else
                 {
@@ -120,25 +129,22 @@ namespace MultiplayerAvatars.Providers
 
         public async Task<AvatarPrefab?> LoadAvatar(string avatarFile)
         {
-            TaskCompletionSource<AvatarPrefab?> tcs = new TaskCompletionSource<AvatarPrefab?>();
             try
             {
                 _ = _avatarLoader ?? throw new InvalidOperationException("Avatar loader not set.");
+                var cancellationTokenSource = new CancellationTokenSource();
 
-                var coroutine = _avatarLoader.LoadFromFileAsync(avatarFile, (AvatarPrefab avatar) => tcs.TrySetResult(avatar), e => tcs.TrySetException(e));
-                await IPA.Utilities.Async.Coroutines.AsTask(coroutine);
-                if (!tcs.Task.IsCompleted)
+                var task = _avatarLoader.LoadFromFileAsync(avatarFile, (IProgress<float>)null!, cancellationTokenSource.Token);
+
+                if (await Task.WhenAny(task, Task.Delay(10000, cancellationTokenSource.Token)) != task)
                 {
-                    var timeout = Task.Delay(10000);
-                    var task = await Task.WhenAny(tcs.Task, timeout);
-                    if (task == timeout)
-                    {
-                        Plugin.Log?.Warn($"Timeout exceeded trying to load avatar '{avatarFile}'");
-                        tcs.TrySetCanceled();
-                        return null;
-                    }
+                    Plugin.Log?.Warn($"Timeout exceeded trying to load avatar '{avatarFile}'");
+                    cancellationTokenSource.Cancel();
+                    return null;
                 }
-                AvatarPrefab? avatar = await tcs.Task;
+
+                // Re-awit so that any exception or cancellation is rethrown
+                var avatar = await task;
                 if (avatar == null)
                 {
                     Plugin.Log?.Warn($"Couldn't load avatar at '{avatarFile}'");
@@ -177,7 +183,7 @@ namespace MultiplayerAvatars.Providers
             }
             catch (Exception ex)
             {
-                Plugin.Log.Error(ex);
+                Plugin.Log?.Error(ex);
             }
         }
     }
