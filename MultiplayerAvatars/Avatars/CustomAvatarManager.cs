@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using MultiplayerCore.Players;
 using MultiplayerAvatars.Providers;
 using MultiplayerCore.Networking;
+using SiraUtil.Logging;
 
 namespace MultiplayerAvatars.Avatars
 {
@@ -21,18 +22,20 @@ namespace MultiplayerAvatars.Avatars
         public bool hashesCalculated = false;
         public Action<IConnectedPlayer, CustomAvatarData>? avatarReceived;
         private readonly Dictionary<string, CustomAvatarData> _avatars = new Dictionary<string, CustomAvatarData>();
+        private readonly SiraLog _logger;
 
-        internal CustomAvatarManager(MpPacketSerializer packetSerializer, PlayerAvatarManager avatarManager, IMultiplayerSessionManager sessionManager, IAvatarProvider<AvatarPrefab> avatarProvider)
+        internal CustomAvatarManager(MpPacketSerializer packetSerializer, PlayerAvatarManager avatarManager, IMultiplayerSessionManager sessionManager, IAvatarProvider<AvatarPrefab> avatarProvider, SiraLog logger)
         {
             _packetSerializer = packetSerializer;
             _avatarManager = avatarManager;
             _sessionManager = sessionManager;
             _avatarProvider = avatarProvider;
+            _logger = logger;
         }
 
         public void Initialize()
         {
-            Plugin.Log?.Info("Setting up CustomAvatarManager");
+            _logger.Info("Setting up CustomAvatarManager");
             _avatarProvider.hashesCalculated += (x, y) => hashesCalculated = true;
             _avatarManager.avatarScaleChanged += scale => localAvatar.scale = scale;
             _avatarManager.avatarChanged += OnAvatarChanged;
@@ -59,7 +62,7 @@ namespace MultiplayerAvatars.Avatars
                 return;
             }
 
-            Plugin.Log?.Warn($"Attempting to hash {avatar.prefab.fullPath}");
+            _logger.Warn($"Attempting to hash {avatar.prefab.fullPath}");
             _avatarProvider.HashAvatar(avatar.prefab).ContinueWith(r =>
             {
                 localAvatar.hash = r.Result;
@@ -75,7 +78,7 @@ namespace MultiplayerAvatars.Avatars
 
         private void HandleAvatarPacket(CustomAvatarPacket packet, IConnectedPlayer player)
         {
-            Plugin.Log?.Info($"Received 'CustomAvatarPacket' from '{player.userId}' with '{packet.hash}'");
+            _logger.Info($"Received 'CustomAvatarPacket' from '{player.userId}' with '{packet.hash}'");
             _avatars[player.userId] = new CustomAvatarData(packet);
             avatarReceived?.Invoke(player, _avatars[player.userId]);
         }

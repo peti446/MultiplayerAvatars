@@ -1,15 +1,19 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
+using SiraUtil.Logging;
 using UnityEngine;
 using UnityEngine.Networking;
 
 namespace MultiplayerAvatars.Avatars
 {
-
     public class AvatarInfo
     {
         public string[]? tags;
@@ -23,6 +27,9 @@ namespace MultiplayerAvatars.Avatars
         public string? install_link;
         public string? date;
 
+        [JsonIgnore] public SiraLog Logger = null!;
+        [JsonIgnore] public HttpClient HttpClient = null!;
+
         public async Task<string?> DownloadAvatar(CancellationToken cancellationToken)
         {
             if (Uri.TryCreate(download, UriKind.Absolute, out Uri uri))
@@ -30,7 +37,8 @@ namespace MultiplayerAvatars.Avatars
                 string? customAvatarPath = null;
                 try
                 {
-                    HttpResponseMessage? response = await Plugin.HttpClient.GetAsync(uri, cancellationToken).ConfigureAwait(false);
+                    HttpResponseMessage? response =
+                        await HttpClient.GetAsync(uri, cancellationToken).ConfigureAwait(false);
                     response.EnsureSuccessStatusCode();
                     string avatarDirectory = Path.Combine(IPA.Utilities.UnityGame.InstallPath, "CustomAvatars");
                     Directory.CreateDirectory(avatarDirectory);
@@ -43,16 +51,18 @@ namespace MultiplayerAvatars.Avatars
                     {
                         customAvatarPath = Path.Combine(avatarDirectory, $"{name}_{index++}.avatar");
                     }
+
                     using (var fs = File.Create(customAvatarPath))
                     {
                         await response.Content.CopyToAsync(fs).ConfigureAwait(false);
                     }
+
                     return customAvatarPath;
                 }
                 catch (Exception ex)
                 {
-                    Plugin.Log?.Error($"Error downloading avatar from '{uri}': {ex.Message}");
-                    Plugin.Log?.Debug(ex);
+                    Logger.Error($"Error downloading avatar from '{uri}': {ex.Message}");
+                    Logger.Debug(ex);
                     if (customAvatarPath != null && File.Exists(customAvatarPath))
                     {
                         try
@@ -61,29 +71,40 @@ namespace MultiplayerAvatars.Avatars
                         }
                         catch (Exception e)
                         {
-                            Plugin.Log?.Error($"Error trying to delete incomplete download at '{customAvatarPath}': {e.Message}");
+                            Logger.Error(
+                                $"Error trying to delete incomplete download at '{customAvatarPath}': {e.Message}");
                         }
                     }
                 }
             }
+
             return null;
         }
 
         public IEnumerator DownloadAvatar(Action<string> callback)
         {
             UnityWebRequest www = UnityWebRequest.Get(download);
-            www.SetRequestHeader("User-Agent", Plugin.UserAgent);
+
+            if (HttpClient.DefaultRequestHeaders.TryGetValues("User-Agent", out IEnumerable<string> value))
+            {
+                www.SetRequestHeader("User-Agent", value.FirstOrDefault());
+            }
+            else
+            {
+                www.SetRequestHeader("User-Agent", "MultiplayerInfo BeatSaber");
+            }
+
             www.timeout = 0;
 
             yield return www.SendWebRequest();
 
             if (www.isNetworkError || www.isHttpError)
             {
-                Plugin.Log?.Error($"Unable to download avatar! {www.error}");
+                Logger.Error($"Unable to download avatar! {www.error}");
                 yield break;
             }
 
-            Plugin.Log?.Debug("Received response from ModelSaber...");
+            Logger.Debug("Received response from ModelSaber...");
             string docPath = "";
             string customAvatarPath = "";
 
@@ -97,10 +118,10 @@ namespace MultiplayerAvatars.Avatars
                 customAvatarPath = docPath + "/CustomAvatars/" + name + ".avatar";
                 customAvatarPath = Path.Combine(IPA.Utilities.UnityGame.InstallPath, "CustomAvatars", $"{name}.avatar");
 
-                Plugin.Log?.Debug($"Saving avatar to \"{customAvatarPath}\"...");
+                Logger.Debug($"Saving avatar to \"{customAvatarPath}\"...");
 
                 File.WriteAllBytes(customAvatarPath, data);
-                Plugin.Log?.Debug("Downloaded avatar!");
+                Logger.Debug("Downloaded avatar!");
 
                 _ = name ?? throw new InvalidOperationException("Unable to download avatar. No name found.");
 
@@ -108,7 +129,7 @@ namespace MultiplayerAvatars.Avatars
             }
             catch (Exception e)
             {
-                Plugin.Log?.Critical(e);
+                Logger.Critical(e);
                 yield break;
             }
         }

@@ -15,39 +15,26 @@ namespace MultiplayerAvatars
     {
         public static readonly string ID = "com.github.Goobwabber.MultiplayerAvatars";
         
-        internal static IPALogger Log { get; private set; } = null!;
-        internal static HttpClient HttpClient { get; private set; } = null!;
-        
         private readonly Harmony _harmony;
         private static PluginMetadata _pluginMetadata = null!;
-
-        public static string UserAgent
-		{
-            get
-			{
-                var modVersion = _pluginMetadata.HVersion.ToString();
-                var bsVersion = IPA.Utilities.UnityGame.GameVersion.ToString();
-                return $"MultiplayerAvatars/{modVersion} (BeatSaber/{bsVersion})";
-			}
-		}
 
         [Init]
         public Plugin(IPALogger logger, Zenjector zenjector, PluginMetadata pluginMetadata)
         {
             _harmony = new Harmony(ID);
             _pluginMetadata = pluginMetadata;
-            Log = logger;
+            var client = new HttpClient();
+            var modVersion = _pluginMetadata.HVersion.ToString();
+            var bsVersion = IPA.Utilities.UnityGame.GameVersion.ToString();
+            string userAgent = $"MultiplayerAvatars/{modVersion} (BeatSaber/{bsVersion})";
+            client.DefaultRequestHeaders.Add("User-Agent", userAgent);
 
             zenjector.UseMetadataBinder<Plugin>();
             zenjector.UseLogger(logger);
             zenjector.UseHttpService();
-            zenjector.UseSiraSync(SiraUtil.Web.SiraSync.SiraSyncServiceType.GitHub, "Goobwabber", "MultiplayerCore");
-            zenjector.Install<MpAvatarAppInstaler>(Location.App);
-
-            HttpClient = new HttpClient();
-            HttpClient.DefaultRequestHeaders.Add("User-Agent", Plugin.UserAgent);
+            zenjector.UseSiraSync(SiraUtil.Web.SiraSync.SiraSyncServiceType.GitHub, "Goobwabber", "MultiplayerAvatar");
+            zenjector.Install<MpAvatarAppInstaller>(Location.App, client);
         }
-
 
         [OnEnable]
         public void OnEnable()
